@@ -1,26 +1,34 @@
 from django.test import TestCase
 from .models import Funcionario, Cargo
 
-class FuncionarioModelTest(TestCase):
-    def setUp(self):
-        # Criando um cargo de teste
-        self.cargo = Cargo.objects.create(nome="Gerente de TI", cbo="123456", descricao_cargo=None)
+class FuncionarioTests(TestCase):
 
-        # Criando um funcionário de teste
+    def setUp(self):
+        # Criação de um cargo para associar ao funcionário
+        self.cargo = Cargo.objects.create(nome="Analista", cbo="12345")
+
+        # Criação do funcionário com todos os campos obrigatórios preenchidos
         self.funcionario = Funcionario.objects.create(
             nome="João Silva",
             matricula="1234",
             departamento="TI",
-            data_admissao="2022-01-01",
-            status="Ativo",
-            cargo_inicial=self.cargo,
+            data_admissao="2023-01-01",  # Preenchemos a data de admissão
             cargo_atual=self.cargo,
-            salario=5000.00
+            salario=5000,
+            pagamento_por_fora=1000,
+            tipo_contratacao="CLT",
+            tipo_pagamento="Mensalista",
         )
 
-    def test_funcionario_criado(self):
-        funcionario = Funcionario.objects.get(matricula="1234")
-        self.assertEqual(funcionario.nome, "João Silva")
-        self.assertEqual(funcionario.departamento, "TI")
-        self.assertEqual(funcionario.status, "Ativo")
-        self.assertEqual(funcionario.cargo_atual.nome, "Gerente de TI")
+    def test_historico_cargo_salario(self):
+        # Atualizando o cargo do funcionário para verificar o histórico
+        novo_cargo = Cargo.objects.create(nome="Gerente", cbo="54321")
+        self.funcionario.cargo_atual = novo_cargo
+        self.funcionario.salario = 6000
+        self.funcionario.save()
+
+        # Verificando se o histórico foi criado
+        self.assertEqual(self.funcionario.historicocargosalario_set.count(), 1)
+        historico = self.funcionario.historicocargosalario_set.first()
+        self.assertEqual(historico.cargo, novo_cargo)
+        self.assertEqual(historico.salario, 6000)

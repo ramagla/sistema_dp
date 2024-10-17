@@ -68,10 +68,37 @@ class Funcionario(models.Model):
 
     def __str__(self):
         return f'{self.nome} ({self.matricula})'
+    
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            # Verifica se o funcionário já existe (edição) para comparar as mudanças
+            old_funcionario = Funcionario.objects.get(pk=self.pk)
+            # Verifica se houve mudança no cargo atual ou salário
+            if old_funcionario.cargo_atual != self.cargo_atual or old_funcionario.salario != self.salario:
+                # Cria um novo registro de histórico de cargos e salários
+                HistoricoCargoSalario.objects.create(
+                    funcionario=self,
+                    cargo=self.cargo_atual,
+                    salario=self.salario,
+                    salario_por_fora=self.pagamento_por_fora
+                )
+        
+        # Define o status automaticamente com base na data de desligamento
         if self.data_desligamento:
             self.status = 'Inativo'
         else:
             self.status = 'Ativo'
+        
         super().save(*args, **kwargs)
+
+
+class HistoricoCargoSalario(models.Model):
+    funcionario = models.ForeignKey('Funcionario', on_delete=models.CASCADE)
+    cargo = models.ForeignKey('Cargo', on_delete=models.SET_NULL, null=True)
+    salario = models.DecimalField(max_digits=10, decimal_places=2)
+    salario_por_fora = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    data_mudanca = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.funcionario.nome} - {self.cargo.nome} - {self.data_mudanca}'

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Funcionario, Cargo
+from .models import Funcionario, Cargo,HistoricoCargoSalario
 import os
 import locale
 
@@ -60,3 +60,8 @@ class FuncionarioAdmin(admin.ModelAdmin):
         total = obj.salario + (obj.pagamento_por_fora or 0)
         return locale.currency(total, grouping=True)
     salario_total_formatado.short_description = 'Salário Total'
+
+@admin.register(HistoricoCargoSalario)
+class HistoricoCargoSalarioAdmin(admin.ModelAdmin):
+    list_display = ('funcionario', 'cargo', 'salario', 'salario_por_fora', 'data_mudanca')
+    search_fields = ('funcionario__nome', 'cargo__nome')
